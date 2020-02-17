@@ -1,0 +1,109 @@
+esphome:
+  name: ha_garage_door
+  platform: ESP8266
+  board: nodemcuv2
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  domain: !secret wifi_domain
+
+mqtt:
+  broker: !secret mqtt_broker
+  username: !secret mqtt_username
+  password: !secret mqtt_password
+
+debug:
+logger:
+  level: DEBUG
+ota:
+
+# Exposed Sensors
+
+binary_sensor:
+  - platform: template
+    name: "Left Parking Spot"
+    device_class: occupancy
+    lambda: >-
+      return 0 < id(left_parking_spot).state && id(left_parking_spot).state < 1.5;
+
+  - platform: template
+    name: "Right Parking Spot"
+    device_class: occupancy
+    lambda: >-
+      return 0 < id(right_parking_spot).state && id(right_parking_spot).state < 1.5;
+
+cover:
+  - platform: template
+    name: "Garage Door"
+    lambda: >-
+      if (0 < id(garage_door).state && id(garage_door).state < 0.5) {
+        return cover::COVER_OPEN;
+      } else {
+        return cover::COVER_CLOSED;
+      }
+    open_action:
+      - switch.turn_on:
+          id: relay
+      - delay: 0.2s
+      - switch.turn_off:
+          id: relay
+    close_action:
+      - switch.turn_on:
+          id: relay
+      - delay: 0.2s
+      - switch.turn_off:
+          id: relay
+    stop_action:
+      - switch.turn_on:
+          id: relay
+      - delay: 0.2s
+      - switch.turn_off:
+          id: relay
+
+# Internal Sensors and Switches
+
+sensor:
+  - platform: ultrasonic
+    id: garage_door
+    name: garage-sensor
+    trigger_pin: D7
+    echo_pin: D8
+    timeout: 3m
+    update_interval: 5s
+    filters:
+      - filter_out: nan
+      - sliding_window_moving_average:
+          window_size: 20
+          send_every: 4
+
+  - platform: ultrasonic
+    id: left_parking_spot
+    name: left-parking-sensor
+    trigger_pin: D1
+    echo_pin: D2
+    timeout: 3m
+    filters:
+      - filter_out: nan
+      - sliding_window_moving_average:
+          window_size: 20
+          send_every: 4
+
+  - platform: ultrasonic
+    id: right_parking_spot
+    name: right-parking-sensor
+    trigger_pin: D5
+    echo_pin: D6
+    timeout: 3m
+    filters:
+      - filter_out: nan
+      - sliding_window_moving_average:
+          window_size: 20
+          send_every: 4
+
+switch:
+  - platform: gpio
+    id: relay
+    pin:
+      number: D3
+      inverted: True
