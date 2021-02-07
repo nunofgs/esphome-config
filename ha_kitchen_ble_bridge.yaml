@@ -1,0 +1,26 @@
+esphome:
+  name: ha_kitchen_ble_bridge
+  platform: ESP32
+  board: esp32doit-devkit-v1
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  domain: !secret wifi_domain
+
+mqtt:
+  broker: !secret mqtt_broker
+  username: !secret mqtt_username
+  password: !secret mqtt_password
+
+debug:
+logger:
+  level: DEBUG
+ota:
+
+esp32_ble_tracker:
+
+sensor:
+  - platform: ble_rssi
+    mac_address: !secret mac_cat_hygrometer
+    name: "Cat Kitchen RSSI"
